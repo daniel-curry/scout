@@ -1,0 +1,8 @@
+[package]
+name = "scout"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+glib = "0.20.12"
+gtk = {version = "0.18.2", features = ["v3_24"]}
