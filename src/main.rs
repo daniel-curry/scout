@@ -1,5 +1,7 @@
 use gtk::gdk::keys::constants::Escape;
 use gtk::prelude::*;
+use gio::prelude::AppInfoExt;
+use gio::{AppInfo};
 use gtk::{
     Application, ApplicationWindow, CssProvider, Entry, EventControllerKey,
     Orientation, StyleContext, STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -7,9 +9,26 @@ use gtk::{
 };
 
 fn main() {
-    let app = Application::new(Some("com.scout"), Default::default());
 
-    app.connect_activate(|app| {
+    pub fn get_apps() -> Vec<AppInfo> {
+        AppInfo::all()
+            .into_iter()
+            .filter(|a| a.should_show())         
+            .collect()
+    }
+
+    let installed_apps = get_apps();
+
+    println!("Currently installed applications: \n");
+
+    for app in installed_apps {
+        println!("{}", app.display_name());
+    }
+
+
+    let gtk_app = Application::new(Some("com.scout"), Default::default());
+
+    gtk_app.connect_activate(|gtk_app| {
         let css = "
             entry {
                 box-shadow: none;
@@ -35,7 +54,7 @@ fn main() {
         let container = GtkBox::new(Orientation::Vertical, 0);
         container.pack_start(&entry, true, true, 0);
 
-        let window = ApplicationWindow::new(app);
+        let window = ApplicationWindow::new(gtk_app);
         window.set_title("Scout");
         window.set_default_size(550, 40);
         window.set_resizable(false);
@@ -44,7 +63,7 @@ fn main() {
 
         // Exits the application if Escape key is pressed
         let esc_control = EventControllerKey::new(&window);
-        let app_clone = app.clone();
+        let app_clone = gtk_app.clone();
         esc_control.connect_key_pressed(move |_, key, _, _| {
             if key == *Escape {
                 app_clone.quit();
@@ -59,6 +78,6 @@ fn main() {
         window.show_all();
     });
 
-    app.run();
+    gtk_app.run();
 }
 
