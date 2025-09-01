@@ -2,9 +2,7 @@ use gtk::prelude::*;
 use gtk::gdk::keys::constants::Escape;
 use gtk::{
     Application, ApplicationWindow, CssProvider, Entry, EventControllerKey,
-    Orientation, StyleContext, STYLE_PROVIDER_PRIORITY_APPLICATION,
-    Box as GtkBox,
-};
+    Orientation, StyleContext, STYLE_PROVIDER_PRIORITY_APPLICATION, Box as GtkBox};
 
 use gio::prelude::AppInfoExt;
 use gio::{AppInfo};
@@ -13,9 +11,7 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 
 fn main() {
-    let installed_apps = get_apps();
     let gtk_app = Application::new(Some("com.scout"), Default::default());
-
     gtk_app.connect_activate(move|gtk_app| {
         let css = "
             entry {
@@ -36,18 +32,13 @@ fn main() {
             STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
-        let entry = Entry::new();
-        entry.set_hexpand(true);
-
-        let container = GtkBox::new(Orientation::Vertical, 0);
-        container.pack_start(&entry, true, true, 0);
-
-        let window = ApplicationWindow::new(gtk_app);
-        window.set_title("Scout");
-        window.set_default_size(550, 40);
-        window.set_resizable(false);
-        window.set_decorated(false);
-        window.add(&container);
+        build_ui(gtk_app);
+        let window = gtk_app.active_window().unwrap();
+        let entry = window.child().unwrap().downcast::<GtkBox>().unwrap()
+            .children()[0]
+            .clone()
+            .downcast::<Entry>()
+            .unwrap();
 
         // Exits the application if Escape key is pressed
         let esc_control = EventControllerKey::new(&window);
@@ -63,8 +54,8 @@ fn main() {
         // Keep controller alive for the window’s lifetime
         unsafe { window.set_data("esc-controller", esc_control); }
 
-
         // Fuzzy matching logic
+        let installed_apps = get_apps();
         let apps = installed_apps.clone();
         let matcher = SkimMatcherV2::default();
         entry.connect_changed(move |e| {
@@ -85,8 +76,6 @@ fn main() {
                 println!("{} (score: {})", app.name(), score);
             }
         });
-
-        window.show_all();
     });
     gtk_app.run();
 }
@@ -96,5 +85,23 @@ pub fn get_apps() -> Vec<AppInfo> {
             .into_iter()
             .filter(|a| a.should_show())         
             .collect()
-    }
+}
 
+fn build_ui(app: &Application) {
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .title("Scout")
+        .default_width(550)
+        .default_height(40)
+        .resizable(false)
+        .decorated(false)
+        .build();
+
+    let entry = Entry::new();
+    entry.set_hexpand(true);
+
+    let container = GtkBox::new(Orientation::Vertical, 0);
+    container.pack_start(&entry, true, true, 0);
+    window.set_child(Some(&container));
+    window.show_all();
+}
