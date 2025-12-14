@@ -41,7 +41,7 @@ sudo pacman -S gtk3
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/scout.git
+git clone https://github.com/daniel-curry/scout.git
 cd scout
 ```
 
