@@ -215,39 +215,9 @@ fn get_apps() -> Vec<AppInfo> {
         .collect()
 }
 
-fn launch_app(app: &AppInfo) -> Result<(), String> {
-    // Get the commandline from the AppInfo
-    let commandline = app.commandline().ok_or("No commandline found")?;
-    let cmd_str = commandline.to_string_lossy();
-
-    // Parse the command, removing any %f, %F, %u, %U placeholders
-    let cleaned_cmd = cmd_str
-        .replace("%f", "")
-        .replace("%F", "")
-        .replace("%u", "")
-        .replace("%U", "")
-        .trim()
-        .to_string();
-
-    if cleaned_cmd.is_empty() {
-        return Err("Empty command".to_string());
+fn needs_terminal(app: &AppInfo) -> bool {
+    if let Some(dai) = app.downcast_ref::<gio::DesktopAppInfo>() {
+        return dai.boolean("Terminal");
     }
-
-    // Use setsid to create a new session, completely detaching from the launcher
-    // This prevents the launched app from receiving signals when the launcher exits
-    // The double fork (setsid + sh -c with &) ensures complete independence
-    use std::process::Command;
-
-    Command::new("setsid")
-        .arg("-f")  // fork flag for immediate return
-        .arg("sh")
-        .arg("-c")
-        .arg(cleaned_cmd)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Failed to launch: {}", e))?;
-
-    Ok(())
+    false
 }
