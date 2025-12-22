@@ -119,7 +119,7 @@ fn build_ui(app: &Application) -> Result<(), String> {
                 window_clone.hide();
 
                 if needs_terminal(&appinfo) {
-                if let exec_path = appinfo.executable() {
+                    let exec_path = appinfo.executable();
                     let exec = exec_path.to_string_lossy().into_owned();
                     let term = TERMINAL_EMULATOR.to_string();
                     launch_terminal_application(&[exec], &[term])
@@ -128,7 +128,6 @@ fn build_ui(app: &Application) -> Result<(), String> {
                     let app_ref = app_clone.clone();
                     app_ref.quit();
                     return;
-                }
                 }
 
                 if let Err(err) = launch_gui_app(&appinfo) {
@@ -236,7 +235,7 @@ fn needs_terminal(app: &AppInfo) -> bool {
     false
 }
 
-pub fn launch_gui_app(app: &gio::AppInfo) -> Result<(), String> {
+pub fn launch_gui_app(app: &AppInfo) -> Result<(), String> {
     let ctx = gio::AppLaunchContext::new();
 
     // Prefer DesktopAppInfo so we can inject a child-setup hook (setsid).
