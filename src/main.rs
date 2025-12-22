@@ -7,6 +7,7 @@ use gdk::glib::Propagation;
 use gdk::prelude::*;
 use gio::AppInfo;
 use gio::prelude::AppInfoExt;
+use glib::SpawnFlags;
 
 use gtk::prelude::*;
 use gtk::{
@@ -14,6 +15,8 @@ use gtk::{
 };
 
 use gdk::keys::constants as key;
+
+const TERMINAL_EMULATOR: &str = "kitty";
 
 fn main() {
     let app = Application::new(Some("com.scout"), Default::default());
@@ -115,11 +118,22 @@ fn build_ui(app: &Application) -> Result<(), String> {
                 // Hide window immediately for better UX
                 window_clone.hide();
 
-                if let Err(err) = launch_app(&appinfo) {
+                if needs_terminal(&appinfo) {
+                if let exec_path = appinfo.executable() {
+                    let exec = exec_path.to_string_lossy().into_owned();
+                    let term = TERMINAL_EMULATOR.to_string();
+                    launch_terminal_application(&[exec], &[term])
+                        .map_err(|e| format!("Failed to launch terminal app: {}", e))
+                        .unwrap_or_else(|err| eprintln!("Launch failed: {err}"));
+                    let app_ref = app_clone.clone();
+                    app_ref.quit();
+                    return;
+                }
+                }
+
+                if let Err(err) = launch_gui_app(&appinfo) {
                     eprintln!("Launch failed: {err}");
                 } else {
-                    // Give the shell time to fork the process before we exit
-                    // This ensures the launched app is fully detached
                     let app_ref = app_clone.clone();
                     app_ref.quit();
                 }
@@ -215,39 +229,65 @@ fn get_apps() -> Vec<AppInfo> {
         .collect()
 }
 
-fn launch_app(app: &AppInfo) -> Result<(), String> {
-    // Get the commandline from the AppInfo
-    let commandline = app.commandline().ok_or("No commandline found")?;
-    let cmd_str = commandline.to_string_lossy();
-
-    // Parse the command, removing any %f, %F, %u, %U placeholders
-    let cleaned_cmd = cmd_str
-        .replace("%f", "")
-        .replace("%F", "")
-        .replace("%u", "")
-        .replace("%U", "")
-        .trim()
-        .to_string();
-
-    if cleaned_cmd.is_empty() {
-        return Err("Empty command".to_string());
+fn needs_terminal(app: &AppInfo) -> bool {
+    if let Some(dai) = app.downcast_ref::<gio::DesktopAppInfo>() {
+        return dai.boolean("Terminal");
     }
+    false
+}
 
-    // Use setsid to create a new session, completely detaching from the launcher
-    // This prevents the launched app from receiving signals when the launcher exits
-    // The double fork (setsid + sh -c with &) ensures complete independence
-    use std::process::Command;
+pub fn launch_gui_app(app: &gio::AppInfo) -> Result<(), String> {
+    let ctx = gio::AppLaunchContext::new();
 
-    Command::new("setsid")
-        .arg("-f")  // fork flag for immediate return
-        .arg("sh")
-        .arg("-c")
-        .arg(cleaned_cmd)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .map_err(|e| format!("Failed to launch: {}", e))?;
+    // Prefer DesktopAppInfo so we can inject a child-setup hook (setsid).
+    if let Some(dai) = app.dynamic_cast_ref::<gio::DesktopAppInfo>() {
+        // No URIs/files to pass
+        let uris: [&str; 0] = [];
 
+        let spawn_flags =
+            SpawnFlags::SEARCH_PATH
+            | SpawnFlags::STDOUT_TO_DEV_NULL
+            | SpawnFlags::STDERR_TO_DEV_NULL;
+
+        // Called after fork() but before exec() in the child.
+        let user_setup: Option<Box<dyn FnOnce()>> = Some(Box::new(|| {
+            #[cfg(unix)]
+            unsafe {
+                let _ = libc::setsid();
+            }
+        }));
+
+        dai.launch_uris_as_manager(&uris, Some(&ctx), spawn_flags, user_setup, None)
+            .map_err(|e| format!("Failed to launch app '{}': {}", app.name(), e))?;
+
+        return Ok(());
+    }
+    Ok(())
+}
+
+fn launch_terminal_application(app_argv: &[String], terminal_argv_prefix: &[String]) -> Result<(), glib::Error> {
+
+    // Build argv = terminal + exec-flag/args + app argv
+    let mut argv: Vec<String> = Vec::new();
+    argv.extend_from_slice(terminal_argv_prefix);
+    argv.extend_from_slice(app_argv);
+
+    // Convert to &OsStr slices as gtk-rs expects
+    let argv_os: Vec<std::ffi::OsString> = argv.into_iter().map(Into::into).collect();
+    let argv_refs: Vec<&std::ffi::OsStr> = argv_os.iter().map(|s| s.as_os_str()).collect();
+
+    let launcher = gio::SubprocessLauncher::new(gio::SubprocessFlags::NONE);
+
+    // setsid() child setup: detach from the launcher's session.
+    launcher.set_child_setup(|| {
+        #[cfg(unix)]
+        unsafe {
+            let _ = libc::setsid();
+        }
+    });
+
+    // Spawn and immediately drop handle.
+    // GSubprocess reaps children quickly to avoid zombies.
+    let _child = launcher.spawn(&argv_refs)?;
     Ok(())
 }
