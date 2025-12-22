@@ -16,6 +16,8 @@ use gtk::{
 
 use gdk::keys::constants as key;
 
+const TERMINAL_EMULATOR: &str = "kitty";
+
 fn main() {
     let app = Application::new(Some("com.scout"), Default::default());
 
@@ -116,11 +118,22 @@ fn build_ui(app: &Application) -> Result<(), String> {
                 // Hide window immediately for better UX
                 window_clone.hide();
 
-                if let Err(err) = launch_app(&appinfo) {
+                if needs_terminal(&appinfo) {
+                if let exec_path = appinfo.executable() {
+                    let exec = exec_path.to_string_lossy().into_owned();
+                    let term = TERMINAL_EMULATOR.to_string();
+                    launch_terminal_application(&[exec], &[term])
+                        .map_err(|e| format!("Failed to launch terminal app: {}", e))
+                        .unwrap_or_else(|err| eprintln!("Launch failed: {err}"));
+                    let app_ref = app_clone.clone();
+                    app_ref.quit();
+                    return;
+                }
+                }
+
+                if let Err(err) = launch_gui_app(&appinfo) {
                     eprintln!("Launch failed: {err}");
                 } else {
-                    // Give the shell time to fork the process before we exit
-                    // This ensures the launched app is fully detached
                     let app_ref = app_clone.clone();
                     app_ref.quit();
                 }
@@ -249,5 +262,32 @@ pub fn launch_gui_app(app: &gio::AppInfo) -> Result<(), String> {
 
         return Ok(());
     }
+    Ok(())
+}
+
+fn launch_terminal_application(app_argv: &[String], terminal_argv_prefix: &[String]) -> Result<(), glib::Error> {
+
+    // Build argv = terminal + exec-flag/args + app argv
+    let mut argv: Vec<String> = Vec::new();
+    argv.extend_from_slice(terminal_argv_prefix);
+    argv.extend_from_slice(app_argv);
+
+    // Convert to &OsStr slices as gtk-rs expects
+    let argv_os: Vec<std::ffi::OsString> = argv.into_iter().map(Into::into).collect();
+    let argv_refs: Vec<&std::ffi::OsStr> = argv_os.iter().map(|s| s.as_os_str()).collect();
+
+    let launcher = gio::SubprocessLauncher::new(gio::SubprocessFlags::NONE);
+
+    // setsid() child setup: detach from the launcher's session.
+    launcher.set_child_setup(|| {
+        #[cfg(unix)]
+        unsafe {
+            let _ = libc::setsid();
+        }
+    });
+
+    // Spawn and immediately drop handle.
+    // GSubprocess reaps children quickly to avoid zombies.
+    let _child = launcher.spawn(&argv_refs)?;
     Ok(())
 }
