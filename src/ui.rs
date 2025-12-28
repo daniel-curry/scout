@@ -14,7 +14,7 @@ use gdk::keys::constants as key;
 use crate::entry::{Entry, EntryKind};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
 use crate::search::{get_entries, top_matches};
-use crate::config::{MAX_RESULTS, TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::config::{TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub fn build_ui(app: &Application) -> Result<(), String> {
     // Data
@@ -62,7 +62,7 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
             list.foreach(|child| list.remove(child));
 
             // Compute matches
-            let matches = top_matches(&all_apps, query, MAX_RESULTS);
+            let matches = top_matches(&all_apps, query);
 
             // Update "model" backing the list
             *current_results.borrow_mut() = matches.clone();

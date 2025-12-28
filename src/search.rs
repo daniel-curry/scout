@@ -4,6 +4,7 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use gio::AppInfo;
 use gio::prelude::AppInfoExt;
 use crate::entry::{Entry, SystemAction};
+use crate::config::MAX_RESULTS;
 
 pub fn get_entries() -> Vec<Entry> {
     let mut entries: Vec<Entry> = AppInfo::all()
@@ -20,10 +21,10 @@ pub fn get_entries() -> Vec<Entry> {
     entries
 }
 
-pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str, k: usize) -> Vec<Entry> {
+pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str) -> Vec<Entry> {
     let q = query.trim();
     if q.is_empty() {
-        return entries.iter().take(k).cloned().collect();
+        return entries.iter().take(MAX_RESULTS).cloned().collect();
     }
 
     let matcher = SkimMatcherV2::default();
@@ -37,5 +38,5 @@ pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str, k: usize) -> Vec<Entry
         .collect();
 
     scored.sort_by(|a, b| b.0.cmp(&a.0));
-    scored.into_iter().take(k).map(|(_, e)| e.clone()).collect()
+    scored.into_iter().take(MAX_RESULTS).map(|(_, e)| e.clone()).collect()
 }
