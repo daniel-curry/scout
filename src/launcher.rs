@@ -1,6 +1,7 @@
 use gio::AppInfo;
 use gio::prelude::AppInfoExt;
 use glib::{Cast, SpawnFlags};
+use crate::entry::SystemAction;
 
 pub fn needs_terminal(app: &AppInfo) -> bool {
     if let Some(dai) = app.downcast_ref::<gio::DesktopAppInfo>() {
@@ -62,5 +63,16 @@ pub fn launch_terminal_application(app_argv: &[String], terminal_argv_prefix: &[
     // Spawn and immediately drop handle.
     // GSubprocess reaps children quickly to avoid zombies.
     let _child = launcher.spawn(&argv_refs)?;
+    Ok(())
+}
+
+pub fn launch_system_action(action: &SystemAction) -> Result<(), String> {
+    match action {
+        SystemAction::Shutdown => system_shutdown::shutdown(),
+        SystemAction::Restart => system_shutdown::reboot(),
+        SystemAction::Hibernate => system_shutdown::hibernate(),
+        SystemAction::Sleep => system_shutdown::sleep(),
+    }.expect("System action failed");
+    
     Ok(())
 }

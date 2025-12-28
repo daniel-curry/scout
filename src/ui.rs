@@ -1,11 +1,8 @@
-use gio::AppInfo;
-use gio::prelude::AppInfoExt;
-
 use gtk::{Label, ListBoxRow};
 use gtk::prelude::{ContainerExt, LabelExt};
 use gtk::prelude::*;
 use gtk::{
-    Application, ApplicationWindow, Box as GtkBox, Entry, ListBox, Orientation,
+    Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, ListBox, Orientation,
 };
 
 use std::cell::RefCell;
@@ -14,14 +11,15 @@ use std::rc::Rc;
 use gdk::glib::Propagation;
 use gdk::keys::constants as key;
 
+use crate::entry::{Entry, EntryKind};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
-use crate::search::{get_apps, top_matches};
+use crate::search::{get_entries, top_matches};
 use crate::config::{MAX_RESULTS, TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub fn build_ui(app: &Application) -> Result<(), String> {
     // Data
-    let all_apps = Rc::new(get_apps());
-    let current_results: Rc<RefCell<Vec<AppInfo>>> = Rc::new(RefCell::new(Vec::new()));
+    let all_apps = Rc::new(get_entries());
+    let current_results: Rc<RefCell<Vec<Entry>>> = Rc::new(RefCell::new(Vec::new()));
 
     // Window
     let window = ApplicationWindow::builder()
@@ -43,7 +41,7 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     vbox.set_margin_start(16);
     vbox.set_margin_end(16);
 
-    let entry = Entry::new();
+    let entry = GtkEntry::new();
     entry.set_placeholder_text(Some("Type to search…"));
     vbox.pack_start(&entry, false, false, 0);
 
@@ -70,8 +68,8 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
             *current_results.borrow_mut() = matches.clone();
 
             // Add rows
-            for app in matches {
-                list.add(&render_row(&app));
+            for entry in matches {
+                list.add(&render_row(&entry));
             }
 
             list.show_all();
@@ -100,28 +98,37 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
         let app_clone = app.clone();
         move |_, row| {
             let idx = row.index() as usize;
-            let maybe_app = current_results.borrow().get(idx).cloned();
-            if let Some(appinfo) = maybe_app {
+            let maybe_entry = current_results.borrow().get(idx).cloned();
+            if let Some(entry) = maybe_entry {
                 // Hide window immediately for better UX
                 window_clone.hide();
 
-                if needs_terminal(&appinfo) {
-                    let exec_path = appinfo.executable();
-                    let exec = exec_path.to_string_lossy().into_owned();
-                    let term = TERMINAL_EMULATOR.to_string();
-                    launch_terminal_application(&[exec], &[term])
-                        .map_err(|e| format!("Failed to launch terminal app: {}", e))
-                        .unwrap_or_else(|err| eprintln!("Launch failed: {err}"));
-                    let app_ref = app_clone.clone();
-                    app_ref.quit();
-                    return;
-                }
+                match &entry.kind {
+                    EntryKind::App(appinfo) => {
+                        if needs_terminal(appinfo) {
+                            let exec_path = appinfo.executable();
+                            let exec = exec_path.to_string_lossy().into_owned();
+                            let term = TERMINAL_EMULATOR.to_string();
+                            launch_terminal_application(&[exec], &[term])
+                                .map_err(|e| format!("Failed to launch terminal app: {}", e))
+                                .unwrap_or_else(|err| eprintln!("Launch failed: {err}"));
+                            app_clone.quit();
+                            return;
+                        }
 
-                if let Err(err) = launch_gui_app(&appinfo) {
-                    eprintln!("Launch failed: {err}");
-                } else {
-                    let app_ref = app_clone.clone();
-                    app_ref.quit();
+                        if let Err(err) = launch_gui_app(appinfo) {
+                            eprintln!("Launch failed: {err}");
+                        } else {
+                            app_clone.quit();
+                        }
+                    }
+                    EntryKind::Action(action) => {
+                        if let Err(err) = crate::launcher::launch_system_action(action) {
+                            eprintln!("Action failed: {err}");
+                        } else {
+                            app_clone.quit();
+                        }
+                    }
                 }
             }
         }
@@ -184,9 +191,9 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     Ok(())
 }
 
-pub fn render_row(app: &AppInfo) -> ListBoxRow {
+pub fn render_row(entry: &Entry) -> ListBoxRow {
     let row = ListBoxRow::new();
-    let label = Label::new(Some(&app.name()));
+    let label = Label::new(Some(&entry.title));
     label.set_xalign(0.0);
     row.add(&label);
     row
