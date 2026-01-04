@@ -1,9 +1,9 @@
-use gtk::{Label, ListBoxRow};
-use gtk::prelude::{ContainerExt, LabelExt};
 use gtk::prelude::*;
+use gtk::prelude::{ContainerExt, LabelExt};
 use gtk::{
-    Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, ListBox, Orientation,
+    Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, Image, ListBox, Orientation
 };
+use gtk::{Label, ListBoxRow};
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -11,10 +11,11 @@ use std::rc::Rc;
 use gdk::glib::Propagation;
 use gdk::keys::constants as key;
 
+use crate::config::{TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
 use crate::entry::{Entry, EntryKind};
+use crate::icon::{create_app_icon_widget, create_generic_icon_widget};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
 use crate::search::{get_entries, top_matches};
-use crate::config::{TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub fn build_ui(app: &Application) -> Result<(), String> {
     // Data
@@ -191,10 +192,24 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     Ok(())
 }
 
+pub fn render_icon(entry: &Entry) -> Image {
+    match &entry.kind {
+        EntryKind::App(appinfo) => create_app_icon_widget(appinfo),
+        EntryKind::Action(_) => create_generic_icon_widget("system-shutdown")
+    }
+}
+
 pub fn render_row(entry: &Entry) -> ListBoxRow {
     let row = ListBoxRow::new();
+    let hbox = GtkBox::new(Orientation::Horizontal, 8);
+
+    let icon = render_icon(entry);
+    hbox.pack_start(&icon, false, false, 0);
+
     let label = Label::new(Some(&entry.title));
     label.set_xalign(0.0);
-    row.add(&label);
+    hbox.pack_start(&label, true, true, 0);
+
+    row.add(&hbox);
     row
 }
