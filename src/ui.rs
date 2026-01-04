@@ -7,17 +7,16 @@ use gtk::{Label, ListBoxRow};
 
 use std::cell::RefCell;
 use std::rc::Rc;
-
+use std::sync::Arc;
 use gdk::glib::Propagation;
 use gdk::keys::constants as key;
-
-use crate::config::{TERMINAL_EMULATOR, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::config::Config;
 use crate::entry::{Entry, EntryKind};
 use crate::icon::{create_app_icon_widget, create_generic_icon_widget};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
 use crate::search::{get_entries, top_matches};
 
-pub fn build_ui(app: &Application) -> Result<(), String> {
+pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     // Data
     let all_apps = Rc::new(get_entries());
     let current_results: Rc<RefCell<Vec<Entry>>> = Rc::new(RefCell::new(Vec::new()));
@@ -26,8 +25,8 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     let window = ApplicationWindow::builder()
         .application(app)
         .title("Scout")
-        .default_width(WINDOW_WIDTH)
-        .default_height(WINDOW_HEIGHT)
+        .default_width(cfg.window_width)
+        .default_height(cfg.window_height)
         .resizable(false)
         .decorated(false)
         .build();
@@ -57,20 +56,25 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     let render_results = {
         let list = list.clone();
         let all_apps = all_apps.clone();
+        let cfg = cfg.clone();
         let current_results = current_results.clone();
         move |query: &str| {
             // Clear rows
             list.foreach(|child| list.remove(child));
 
             // Compute matches
-            let matches = top_matches(&all_apps, query);
+            let match_cfg = cfg.clone();
+            let matches = top_matches(&all_apps, query, match_cfg);
 
             // Update "model" backing the list
             *current_results.borrow_mut() = matches.clone();
 
+            //Create new config
+
             // Add rows
             for entry in matches {
-                list.add(&render_row(&entry));
+                let inner_cfg = cfg.clone();
+                list.add(&render_row(&entry, inner_cfg));
             }
 
             list.show_all();
@@ -97,6 +101,7 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
         let current_results = current_results.clone();
         let window_clone = window.clone();
         let app_clone = app.clone();
+        let cfg = cfg.clone();
         move |_, row| {
             let idx = row.index() as usize;
             let maybe_entry = current_results.borrow().get(idx).cloned();
@@ -109,7 +114,7 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
                         if needs_terminal(appinfo) {
                             let exec_path = appinfo.executable();
                             let exec = exec_path.to_string_lossy().into_owned();
-                            let term = TERMINAL_EMULATOR.to_string();
+                            let term = cfg.terminal_emulator.to_string();
                             launch_terminal_application(&[exec], &[term])
                                 .map_err(|e| format!("Failed to launch terminal app: {}", e))
                                 .unwrap_or_else(|err| eprintln!("Launch failed: {err}"));
@@ -192,18 +197,18 @@ pub fn build_ui(app: &Application) -> Result<(), String> {
     Ok(())
 }
 
-pub fn render_icon(entry: &Entry) -> Image {
+pub fn render_icon(entry: &Entry, cfg: Arc<Config>) -> Image {
     match &entry.kind {
-        EntryKind::App(appinfo) => create_app_icon_widget(appinfo),
-        EntryKind::Action(_) => create_generic_icon_widget("system-shutdown")
+        EntryKind::App(appinfo) => create_app_icon_widget(appinfo, cfg),
+        EntryKind::Action(_) => create_generic_icon_widget("system-shutdown", cfg)
     }
 }
 
-pub fn render_row(entry: &Entry) -> ListBoxRow {
+pub fn render_row(entry: &Entry, cfg: Arc<Config>) -> ListBoxRow {
     let row = ListBoxRow::new();
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
 
-    let icon = render_icon(entry);
+    let icon = render_icon(entry, cfg);
     hbox.pack_start(&icon, false, false, 0);
 
     let label = Label::new(Some(&entry.title));

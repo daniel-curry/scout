@@ -1,10 +1,11 @@
 use std::rc::Rc;
+use std::sync::Arc;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gio::AppInfo;
 use gio::prelude::AppInfoExt;
+use crate::config::Config;
 use crate::entry::{Entry, SystemAction};
-use crate::config::MAX_RESULTS;
 
 pub fn get_entries() -> Vec<Entry> {
     let mut entries: Vec<Entry> = AppInfo::all()
@@ -21,10 +22,10 @@ pub fn get_entries() -> Vec<Entry> {
     entries
 }
 
-pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str) -> Vec<Entry> {
+pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str, cfg: Arc<Config>) -> Vec<Entry> {
     let q = query.trim();
     if q.is_empty() {
-        return entries.iter().take(MAX_RESULTS).cloned().collect();
+        return entries.iter().take(cfg.max_results).cloned().collect();
     }
 
     let matcher = SkimMatcherV2::default();
@@ -38,5 +39,5 @@ pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str) -> Vec<Entry> {
         .collect();
 
     scored.sort_by(|a, b| b.0.cmp(&a.0));
-    scored.into_iter().take(MAX_RESULTS).map(|(_, e)| e.clone()).collect()
+    scored.into_iter().take(cfg.max_results).map(|(_, e)| e.clone()).collect()
 }
