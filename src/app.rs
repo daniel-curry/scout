@@ -1,12 +1,16 @@
+use std::sync::Arc;
 use gio::prelude::{ApplicationExt, ApplicationExtManual};
 use gtk::Application;
+use crate::config::Config;
 use crate::ui::build_ui;
 
-pub fn run() {
+pub fn run(cfg: Arc<Config>) {
     let app = Application::new(Some("com.scout"), Default::default());
 
-    app.connect_activate(|app| {
-        if let Err(e) = build_ui(app) {
+    let cfg_clone = cfg.clone();
+    app.connect_activate(move|app| {
+        let cfg_inner = cfg_clone.clone();
+        if let Err(e) = build_ui(app, cfg_inner) {
             eprintln!("UI error: {e}");
             app.quit();
         }

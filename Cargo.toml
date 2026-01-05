@@ -11,3 +11,6 @@ gtk = {version = "0.18.2", features = ["v3_24"]}
 gdk = "0.18.2"
 libc = "0.2.174"
 system_shutdown = "4.0.1"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+directories = "5"
