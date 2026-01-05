@@ -14,6 +14,10 @@ Scout is a minimal application launcher that provides quick access to your insta
 - **Fast**: Built in Rust for optimal performance
 - **Always on Top**: Window stays visible above other applications
 - **Independent Process Management**: Launched apps run completely independent of Scout
+- **Application Icons**: Display app icons next to search results
+- **Terminal App Support**: Automatically launch terminal applications in your preferred terminal emulator
+- **System Actions**: Quick access to Shutdown, Restart, Sleep, and Hibernate from the launcher
+- **Configurable**: Customize Scout via a TOML configuration file
 
 ## Installation
 
@@ -76,11 +80,42 @@ scout
 ### Tips
 
 - The search is fuzzy, so you don't need to type exact names (e.g., "fir" will match "Firefox")
-- When no search query is entered, Scout displays your most recently installed applications
+- When no search query is entered, Scout displays applications from your system (up to the configured `max_results`)
+- Type "shutdown", "restart", "sleep", or "hibernate" to access system power actions
 
 ## Configuration
 
-Scout uses the system's application database (`.desktop` files) to discover installed applications. No additional configuration is needed.
+Scout is fully configurable via a TOML configuration file. On first run, a default configuration file is created at:
+
+```
+~/.config/scout/config.toml
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show_icons` | boolean | `true` | Enable/disable application icons in search results |
+| `max_results` | integer | `5` | Maximum number of search results to display |
+| `terminal_emulator` | string | `"kitty"` | Terminal emulator to use for terminal applications |
+| `window_width` | integer | `600` | Width of the Scout window in pixels |
+| `window_height` | integer | `260` | Height of the Scout window in pixels |
+| `icon_size` | integer | `32` | Size of application icons in pixels |
+| `theme.font_size` | integer | `14` | Font size for UI elements |
+
+### Example Configuration
+
+```toml
+show_icons = true
+max_results = 5
+terminal_emulator = "kitty"
+window_width = 600
+window_height = 260
+icon_size = 32
+
+[theme]
+font_size = 14
+```
 
 ## How It Works
 
@@ -89,6 +124,8 @@ Scout scans your system's application database and presents a searchable interfa
 - **GTK3**: For the user interface
 - **fuzzy-matcher**: For intelligent search matching
 - **GIO/GLib**: For application discovery and management
+- **serde/toml**: For configuration file parsing
+- **directories**: For cross-platform config file location
 
 ## Development
 
@@ -97,8 +134,17 @@ Scout scans your system's application database and presents a searchable interfa
 ```
 scout/
 ├── src/
-│   └── main.rs          # Main application code
+│   ├── main.rs          # Application entry point
+│   ├── app.rs           # GTK application setup
+│   ├── config.rs        # Configuration loading and defaults
+│   ├── entry.rs         # Entry types (apps and system actions)
+│   ├── icon.rs          # Icon loading and rendering
+│   ├── launcher.rs      # Application and action launching
+│   ├── search.rs        # Fuzzy search implementation
+│   └── ui.rs            # UI building and event handling
 ├── Cargo.toml           # Project dependencies
+├── Cargo.lock           # Dependency lock file
+├── LICENSE              # MIT License
 └── README.md            # This file
 ```
 
@@ -121,6 +167,11 @@ cargo build --release
 - `gio` (0.18) - GIO for application info
 - `glib` (0.18) - GLib utilities
 - `fuzzy-matcher` (0.3.7) - Fuzzy string matching
+- `libc` (0.2) - C library bindings for process management
+- `system_shutdown` (4.0) - System power actions (shutdown, restart, etc.)
+- `serde` (1.0) - Serialization/deserialization framework
+- `toml` (0.8) - TOML configuration file parsing
+- `directories` (5.0) - Cross-platform config directory paths
 
 ## License
 
@@ -134,7 +185,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 Potential future enhancements:
 - Custom keybindings
-- Icon display in results
-- Theme customization
 - Plugin support
 - External API support
