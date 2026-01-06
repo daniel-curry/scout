@@ -10,12 +10,9 @@ Scout is a minimal application launcher that provides quick access to your insta
 
 - **Fuzzy Search**: Quickly find applications using fuzzy matching
 - **Keyboard-Driven**: Navigate and launch apps without touching your mouse
-- **Minimal UI**: Clean, undecorated window that stays focused on the task
 - **Fast**: Built in Rust for optimal performance
-- **Always on Top**: Window stays visible above other applications
-- **Independent Process Management**: Launched apps run completely independent of Scout
-- **Application Icons**: Display app icons next to search results
 - **Terminal App Support**: Automatically launch terminal applications in your preferred terminal emulator
+- **Built-In Calculator**: Easily get calculations right from the launcher
 - **System Actions**: Quick access to Shutdown, Restart, Sleep, and Hibernate from the launcher
 - **Configurable**: Customize Scout via a TOML configuration file
 
