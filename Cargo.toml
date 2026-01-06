@@ -14,3 +14,4 @@ system_shutdown = "4.0.1"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 directories = "5"
+meval = "0.2.0"

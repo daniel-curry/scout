@@ -1,7 +1,7 @@
-use gio::AppInfo;
+use crate::entry::{SystemAction};
 use gio::prelude::AppInfoExt;
+use gio::AppInfo;
 use glib::{Cast, SpawnFlags};
-use crate::entry::SystemAction;
 
 pub fn needs_terminal(app: &AppInfo) -> bool {
     if let Some(dai) = app.downcast_ref::<gio::DesktopAppInfo>() {
