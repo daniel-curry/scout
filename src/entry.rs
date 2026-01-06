@@ -4,6 +4,7 @@ use gio::AppInfo;
 pub enum EntryKind {
     App(AppInfo),
     Action(SystemAction),
+    Result(String),
 }
 
 #[derive(Clone, Debug)]
@@ -19,6 +20,7 @@ pub enum SystemAction {
     Hibernate,
     Sleep,
 }
+
 
 impl Entry {
     pub fn from_app(app: AppInfo) -> Self {
@@ -40,6 +42,13 @@ impl Entry {
         Self {
             title: title.to_string(),
             kind: EntryKind::Action(action),
+        }
+    }
+
+    pub fn math_result(result: f64) -> Self {
+        Self {
+            title: format!("{}", result),
+            kind: EntryKind::Result(String::new()),
         }
     }
 }

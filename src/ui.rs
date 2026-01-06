@@ -1,8 +1,6 @@
 use gtk::prelude::*;
 use gtk::prelude::{ContainerExt, LabelExt};
-use gtk::{
-    Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, Image, ListBox, Orientation
-};
+use gtk::{Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, Image, ListBox, Orientation};
 use gtk::{Label, ListBoxRow};
 
 use std::cell::RefCell;
@@ -135,6 +133,11 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
                             app_clone.quit();
                         }
                     }
+
+                    EntryKind::Result(_math_entry) => {
+                        // Do nothing; we just show the result
+                        app_clone.quit();
+                    }
                 }
             }
         }
@@ -200,7 +203,8 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
 pub fn render_icon(entry: &Entry, cfg: Arc<Config>) -> Image {
     match &entry.kind {
         EntryKind::App(appinfo) => create_app_icon_widget(appinfo, cfg),
-        EntryKind::Action(_) => create_generic_icon_widget("system-shutdown", cfg)
+        EntryKind::Action(_) => create_generic_icon_widget("system-shutdown", cfg),
+        EntryKind::Result(_) => create_generic_icon_widget("accessories-calculator", cfg),
     }
 }
 
