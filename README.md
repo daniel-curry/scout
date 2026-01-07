@@ -18,45 +18,32 @@ Scout is a minimal application launcher that provides quick access to your insta
 
 ## Installation
 
-### Prerequisites
+### Dependencies
 
-- Rust (latest stable version)
-- GTK3 development libraries
-
-On Debian/Ubuntu:
+#### Arch / EndeavourOS
 ```bash
-sudo apt install libgtk-3-dev
+sudo pacman -S --needed gtk3 pkgconf
 ```
 
-On Fedora:
+#### Debian/Ubuntu
 ```bash
-sudo dnf install gtk3-devel
+sudo apt update
+sudo apt install -y libgtk-3-dev pkg-config
 ```
 
-On Arch Linux:
+#### Fedora
 ```bash
-sudo pacman -S gtk3
+sudo dnf update
+sudo dnf install -y gtk3-devel pkgconf-pkg-config
 ```
+
 
 ### Building from Source
 
-1. Clone the repository:
+Clone the repository:
 ```bash
-git clone https://github.com/daniel-curry/scout.git
-cd scout
-```
-
-2. Build the project:
-```bash
-cargo build --release
-```
-
-3. The binary will be available at `target/release/scout`
-
-4. (Optional) Install to your system:
-```bash
-sudo cp target/release/scout /usr/local/bin/
-```
+cargo install --git https://github.com/daniel-curry/scout --locked
+````
 
 ## Usage
 
@@ -90,15 +77,15 @@ Scout is fully configurable via a TOML configuration file. On first run, a defau
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `show_icons` | boolean | `true` | Enable/disable application icons in search results |
-| `max_results` | integer | `5` | Maximum number of search results to display |
-| `terminal_emulator` | string | `"kitty"` | Terminal emulator to use for terminal applications |
-| `window_width` | integer | `600` | Width of the Scout window in pixels |
-| `window_height` | integer | `260` | Height of the Scout window in pixels |
-| `icon_size` | integer | `32` | Size of application icons in pixels |
-| `theme.font_size` | integer | `14` | Font size for UI elements |
+| Option              | Type    | Default   | Description                                        |
+|---------------------|---------|-----------|----------------------------------------------------|
+| `show_icons`        | boolean | `true`    | Enable/disable application icons in search results |
+| `max_results`       | integer | `5`       | Maximum number of search results to display        |
+| `terminal_emulator` | string  | `"kitty"` | Terminal emulator to use for terminal applications |
+| `window_width`      | integer | `600`     | Width of the Scout window in pixels                |
+| `window_height`     | integer | `260`     | Height of the Scout window in pixels               |
+| `icon_size`         | integer | `32`      | Size of application icons in pixels                |
+| `theme.font_size`   | integer | `14`      | Font size for UI elements                          |
 
 ### Example Configuration
 
@@ -169,6 +156,7 @@ cargo build --release
 - `serde` (1.0) - Serialization/deserialization framework
 - `toml` (0.8) - TOML configuration file parsing
 - `directories` (5.0) - Cross-platform config directory paths
+- `meval` (0.2) - Mathematical expression evaluation for calculator
 
 ## License
 
@@ -177,10 +165,3 @@ This project is licensed under the MIT License.
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Roadmap
-
-Potential future enhancements:
-- Custom keybindings
-- Plugin support
-- External API support
