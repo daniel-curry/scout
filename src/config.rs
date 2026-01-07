@@ -98,7 +98,8 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = Config::default();
-        assert_eq!(config.show_icons, true);
+        // Fixed: Use assert! for checking true
+        assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.theme.font_size, 14);
         assert_eq!(config.terminal_emulator, "kitty");
@@ -128,7 +129,8 @@ mod tests {
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
-        assert_eq!(config.show_icons, false);
+        // Fixed: Use assert!(!) for checking false
+        assert!(!config.show_icons);
         assert_eq!(config.max_results, 10);
         assert_eq!(config.terminal_emulator, "alacritty");
         assert_eq!(config.window_width, 800);
@@ -145,7 +147,8 @@ mod tests {
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
-        assert_eq!(config.show_icons, false);
+        // Fixed: Use assert!(!) for checking false
+        assert!(!config.show_icons);
         assert_eq!(config.max_results, 15);
         // These should use defaults
         assert_eq!(config.terminal_emulator, "kitty");
@@ -161,7 +164,8 @@ mod tests {
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse empty TOML");
         // All fields should use defaults
-        assert_eq!(config.show_icons, true);
+        // Fixed: Use assert! for checking true
+        assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.terminal_emulator, "kitty");
         assert_eq!(config.window_width, 600);
@@ -180,7 +184,8 @@ mod tests {
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert_eq!(config.theme.font_size, 20);
         // Other fields should use defaults
-        assert_eq!(config.show_icons, true);
+        // Fixed: Use assert! for checking true
+        assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.terminal_emulator, "kitty");
     }
