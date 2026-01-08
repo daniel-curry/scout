@@ -212,8 +212,10 @@ pub fn render_row(entry: &Entry, cfg: Arc<Config>) -> ListBoxRow {
     let row = ListBoxRow::new();
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
 
-    let icon = render_icon(entry, cfg);
-    hbox.pack_start(&icon, false, false, 0);
+    if cfg.show_icons {
+        let icon = render_icon(entry, cfg);
+        hbox.pack_start(&icon, false, false, 0);
+    }
 
     let label = Label::new(Some(&entry.title));
     label.set_xalign(0.0);
