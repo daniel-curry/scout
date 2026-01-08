@@ -26,11 +26,21 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
         .default_width(cfg.window_width)
         .default_height(cfg.window_height)
         .resizable(false)
-        .decorated(false)
+        .decorated(true)
         .build();
 
     window.set_position(gtk::WindowPosition::Center);
     window.set_keep_above(true);
+
+    // CSS Styling
+    {
+        let provider = gtk::CssProvider::new();
+        let css = format!("
+            * {{
+                font-size: {}pt;
+            }}
+        ", cfg.theme.font_size);
+    }
 
     // Layout
     let vbox = GtkBox::new(Orientation::Vertical, 8);
