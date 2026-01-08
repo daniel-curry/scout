@@ -4,7 +4,6 @@ use std::{fs, io, path::PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    //TODO: Add functionality to enable/disable icons
     #[serde(default = "default_show_icons")]
     pub show_icons: bool,
 
@@ -31,11 +30,29 @@ pub struct Config {
 pub struct Theme {
     #[serde(default = "default_font_size")]
     pub font_size: u32,
+    
+    #[serde(default = "default_font_family")]
+    pub font_family: String,
+    
+    #[serde(default = "default_bg_color")]
+    pub bg_color: String,
+    
+    #[serde(default = "default_text_color")]
+    pub text_color: String,
+    
+    #[serde(default = "default_selection_color")]
+    pub selection_color: String,
 }
 
 impl Default for Theme {
     fn default() -> Self {
-        Self { font_size: default_font_size() }
+        Self { 
+            font_size: default_font_size(),
+            font_family: default_font_family(),
+            bg_color: default_bg_color(),
+            text_color: default_text_color(),
+            selection_color: default_selection_color(),
+        }
     }
 }
 
@@ -46,6 +63,10 @@ fn default_terminal_emulator() -> String { "kitty".to_string() }
 fn default_window_width() -> i32 { 600 }
 fn default_window_height() -> i32 { 260 }
 fn default_icon_size() -> i32 { 32 }
+fn default_font_family() -> String { "Sans".to_string() }
+fn default_bg_color() -> String { "#FFFFFF".to_string() }
+fn default_text_color() -> String { "#000000".to_string() }
+fn default_selection_color() -> String { "#D3D3D3".to_string() }
 
 impl Default for Config {
     fn default() -> Self {
@@ -98,7 +119,6 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = Config::default();
-        // Fixed: Use assert! for checking true
         assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.theme.font_size, 14);
@@ -129,7 +149,6 @@ mod tests {
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
-        // Fixed: Use assert!(!) for checking false
         assert!(!config.show_icons);
         assert_eq!(config.max_results, 10);
         assert_eq!(config.terminal_emulator, "alacritty");
@@ -147,7 +166,6 @@ mod tests {
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
-        // Fixed: Use assert!(!) for checking false
         assert!(!config.show_icons);
         assert_eq!(config.max_results, 15);
         // These should use defaults
@@ -164,7 +182,6 @@ mod tests {
 
         let config: Config = toml::from_str(toml_str).expect("Failed to parse empty TOML");
         // All fields should use defaults
-        // Fixed: Use assert! for checking true
         assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.terminal_emulator, "kitty");
@@ -184,7 +201,6 @@ mod tests {
         let config: Config = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert_eq!(config.theme.font_size, 20);
         // Other fields should use defaults
-        // Fixed: Use assert! for checking true
         assert!(config.show_icons);
         assert_eq!(config.max_results, 5);
         assert_eq!(config.terminal_emulator, "kitty");
@@ -195,7 +211,7 @@ mod tests {
         let config = Config {
             show_icons: false,
             max_results: 8,
-            theme: Theme { font_size: 18 },
+            theme: Theme { font_size: 18, ..Theme::default() },
             terminal_emulator: "gnome-terminal".to_string(),
             window_width: 700,
             window_height: 350,
@@ -302,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_theme_clone() {
-        let theme = Theme { font_size: 18 };
+        let theme = Theme { font_size: 18, ..Theme::default() };
         let cloned = theme.clone();
 
         assert_eq!(theme.font_size, cloned.font_size);
