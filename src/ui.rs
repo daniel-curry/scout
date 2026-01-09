@@ -1,6 +1,6 @@
 use gtk::prelude::*;
 use gtk::prelude::{ContainerExt, LabelExt};
-use gtk::{Application, ApplicationWindow, Box as GtkBox, Entry as GtkEntry, Image, ListBox, Orientation};
+use gtk::{Application, ApplicationWindow, Box as GtkBox, CssProvider, Entry as GtkEntry, Image, ListBox, Orientation};
 use gtk::{Label, ListBoxRow};
 
 use std::cell::RefCell;
@@ -8,7 +8,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use gdk::glib::Propagation;
 use gdk::keys::constants as key;
-use crate::config::Config;
+use crate::config::{Config, Theme};
 use crate::entry::{Entry, EntryKind};
 use crate::icon::{create_app_icon_widget, create_generic_icon_widget};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
@@ -26,11 +26,15 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
         .default_width(cfg.window_width)
         .default_height(cfg.window_height)
         .resizable(false)
-        .decorated(false)
+        .decorated(true)
         .build();
 
     window.set_position(gtk::WindowPosition::Center);
     window.set_keep_above(true);
+
+    let css = css_from_config(&cfg.theme);
+    install_global_css(&css);
+
 
     // Layout
     let vbox = GtkBox::new(Orientation::Vertical, 8);
@@ -40,7 +44,7 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     vbox.set_margin_end(16);
 
     let entry = GtkEntry::new();
-    entry.set_placeholder_text(Some("Type to search…"));
+    entry.set_text("Type to search…");
     vbox.pack_start(&entry, false, false, 0);
 
     let list = ListBox::new();
@@ -49,6 +53,9 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     vbox.pack_start(&list, true, true, 0);
 
     window.add(&vbox);
+
+    // Track if this is the first change (to clear hint text)
+    let hint_cleared: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
     // Render helper: compute top matches, rebuild rows, select first.
     let render_results = {
@@ -88,9 +95,35 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     // Update list on typing
     entry.connect_changed({
         let render_results = render_results.clone();
+        let hint_cleared = hint_cleared.clone();
         move |e| {
             let text = e.text().to_string();
+
+            // If hint hasn't been cleared yet and text is the hint, skip
+            if !*hint_cleared.borrow() {
+                if text == "Type to search…" {
+                    return;
+                }
+                *hint_cleared.borrow_mut() = true;
+            }
+
             render_results(&text);
+        }
+    });
+
+    // Clear the hint text when user starts typing
+    entry.connect_key_press_event({
+        let hint_cleared = hint_cleared.clone();
+        move |e, ev| {
+            if !*hint_cleared.borrow() {
+                let keyval = ev.keyval();
+                // Only clear on printable characters, not navigation keys
+                if let Some(c) = keyval.to_unicode() && !c.is_control() {
+                        e.set_text("");
+                        *hint_cleared.borrow_mut() = true;
+                }
+            }
+            Propagation::Proceed
         }
     });
 
@@ -197,6 +230,8 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
 
     window.show_all();
     entry.grab_focus();
+    // Deselect the hint text so it's visible but not selected
+    entry.select_region(0, 0);
     Ok(())
 }
 
@@ -212,8 +247,10 @@ pub fn render_row(entry: &Entry, cfg: Arc<Config>) -> ListBoxRow {
     let row = ListBoxRow::new();
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
 
-    let icon = render_icon(entry, cfg);
-    hbox.pack_start(&icon, false, false, 0);
+    if cfg.show_icons {
+        let icon = render_icon(entry, cfg);
+        hbox.pack_start(&icon, false, false, 0);
+    }
 
     let label = Label::new(Some(&entry.title));
     label.set_xalign(0.0);
@@ -221,4 +258,75 @@ pub fn render_row(entry: &Entry, cfg: Arc<Config>) -> ListBoxRow {
 
     row.add(&hbox);
     row
+}
+
+pub fn install_global_css(css: &str) {
+    // Create provider + load CSS
+    let provider = CssProvider::new();
+    provider
+        .load_from_data(css.as_bytes())
+        .expect("Failed to load CSS");
+
+    // Apply to the whole screen (global)
+    if let Some(screen) = gdk::Screen::default() {
+        gtk::StyleContext::add_provider_for_screen(
+            &screen,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    } else {
+        eprintln!("No default GDK screen available");
+    }
+}
+
+pub fn css_from_config(theme: &Theme) -> String {
+    format!(
+        r#"
+        window {{
+            background-color: {bg_color};
+        }}
+
+        entry {{
+            font-family: "{font_family}";
+            font-size: {font_size}pt;
+            color: {font_color};
+            background-color: {bg_color};
+            min-height: {entry_min_height}px;
+            border: 1px solid {entry_border_color};
+            border-radius: {entry_border_radius}px;
+        }}
+
+        entry:focus {{
+            outline: none;
+            box-shadow: none;
+            border-color: {entry_border_color};
+        }}
+
+        label {{
+            font-family: "{font_family}";
+            font-size: {font_size}pt;
+            color: {font_color};
+        }}
+
+        list {{
+            background-color: {bg_color};
+        }}
+
+        row {{
+            background-color: {bg_color};
+        }}
+
+        row:selected {{
+            background-color: {selection_color};
+        }}
+        "#,
+        font_family = theme.font_family,
+        font_size = theme.font_size,
+        bg_color = theme.bg_color,
+        font_color = theme.font_color,
+        selection_color = theme.selection_color,
+        entry_min_height = theme.entry_min_height,
+        entry_border_color = theme.entry_border_color,
+        entry_border_radius = theme.entry_border_radius,
+    )
 }
