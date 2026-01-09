@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::sync::Arc;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use gio::AppInfo;
@@ -22,7 +21,7 @@ pub fn get_entries() -> Vec<Entry> {
     entries
 }
 
-pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str, cfg: Arc<Config>) -> Vec<Entry> {
+pub fn top_matches(entries: &Rc<Vec<Entry>>, query: &str, cfg: Rc<Config>) -> Vec<Entry> {
     let q = query.trim();
     if q.is_empty() {
         return entries.iter().take(cfg.max_results).cloned().collect();
@@ -73,7 +72,7 @@ mod tests {
     #[test]
     // Test that empty query returns the first N entries
     fn empty_query_returns_first_n_entries() {
-        let cfg = Arc::new(Config { max_results: 2, ..Default::default() });
+        let cfg = Rc::new(Config { max_results: 2, ..Default::default() });
         let entries = Rc::new(vec![
             Entry { title: "App1".into(), kind: EntryKind::Result(String::new()) },
             Entry { title: "App2".into(), kind: EntryKind::Result(String::new()) },
@@ -86,7 +85,7 @@ mod tests {
     #[test]
     // Test that math expression is evaluated correctly
     fn math_expression_evaluated() {
-        let cfg = Arc::new(Config::default());
+        let cfg = Rc::new(Config::default());
         let entries = Rc::new(vec![]);
         let results = top_matches(&entries, "2+2", cfg);
         assert_eq!(results.len(), 1);

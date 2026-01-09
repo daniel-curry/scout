@@ -5,7 +5,6 @@ use gtk::{Label, ListBoxRow};
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
 use gdk::glib::Propagation;
 use gdk::keys::constants as key;
 use crate::config::{Config, Theme};
@@ -14,7 +13,7 @@ use crate::icon::{create_app_icon_widget, create_generic_icon_widget};
 use crate::launcher::{launch_gui_app, launch_terminal_application, needs_terminal};
 use crate::search::{get_entries, top_matches};
 
-pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
+pub fn build_ui(app: &Application, cfg: Rc<Config>) -> Result<(), String> {
     // Data
     let all_apps = Rc::new(get_entries());
     let current_results: Rc<RefCell<Vec<Entry>>> = Rc::new(RefCell::new(Vec::new()));
@@ -235,7 +234,7 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     Ok(())
 }
 
-pub fn render_icon(entry: &Entry, cfg: Arc<Config>) -> Image {
+pub fn render_icon(entry: &Entry, cfg: Rc<Config>) -> Image {
     match &entry.kind {
         EntryKind::App(appinfo) => create_app_icon_widget(appinfo, cfg),
         EntryKind::Action(_) => create_generic_icon_widget("system-shutdown", cfg),
@@ -243,7 +242,7 @@ pub fn render_icon(entry: &Entry, cfg: Arc<Config>) -> Image {
     }
 }
 
-pub fn render_row(entry: &Entry, cfg: Arc<Config>) -> ListBoxRow {
+pub fn render_row(entry: &Entry, cfg: Rc<Config>) -> ListBoxRow {
     let row = ListBoxRow::new();
     let hbox = GtkBox::new(Orientation::Horizontal, 8);
 

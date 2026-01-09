@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::rc::Rc;
 use gtk::IconLookupFlags;
 use gdk::gdk_pixbuf::Pixbuf;
 use gio::AppInfo;
@@ -18,7 +18,7 @@ fn get_icon(app: &AppInfo, cfg: &Config) -> Option<Pixbuf> {
     icon_info.load_icon().ok()
 }
 
-pub fn create_app_icon_widget(app: &AppInfo, cfg: Arc<Config>) -> gtk::Image {
+pub fn create_app_icon_widget(app: &AppInfo, cfg: Rc<Config>) -> gtk::Image {
     if let Some(pixbuf) = get_icon(app, &cfg) {
         gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
@@ -31,7 +31,7 @@ pub fn create_app_icon_widget(app: &AppInfo, cfg: Arc<Config>) -> gtk::Image {
     }
 }
 
-pub fn create_generic_icon_widget(icon_name: &str, cfg: Arc<Config>) -> gtk::Image {
+pub fn create_generic_icon_widget(icon_name: &str, cfg: Rc<Config>) -> gtk::Image {
     let image = gtk::Image::from_icon_name(
         Some(icon_name),
         gtk::IconSize::Invalid,

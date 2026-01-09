@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::rc::Rc;
 use gio::prelude::{ApplicationExt, ApplicationExtManual};
 use gtk::Application;
 use crate::config::Config;
 use crate::ui::build_ui;
 
-pub fn run(cfg: Arc<Config>) {
+pub fn run(cfg: Rc<Config>) {
     let app = Application::new(Some("com.scout"), Default::default());
 
     let cfg_clone = cfg.clone();
