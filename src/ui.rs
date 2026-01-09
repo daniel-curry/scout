@@ -50,7 +50,7 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     vbox.set_margin_end(16);
 
     let entry = GtkEntry::new();
-    entry.set_placeholder_text(Some("Type to search…"));
+    entry.set_text("Type to search…");
     vbox.pack_start(&entry, false, false, 0);
 
     let list = ListBox::new();
@@ -59,6 +59,9 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     vbox.pack_start(&list, true, true, 0);
 
     window.add(&vbox);
+
+    // Track if this is the first change (to clear hint text)
+    let hint_cleared: Rc<RefCell<bool>> = Rc::new(RefCell::new(false));
 
     // Render helper: compute top matches, rebuild rows, select first.
     let render_results = {
@@ -98,9 +101,35 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
     // Update list on typing
     entry.connect_changed({
         let render_results = render_results.clone();
+        let hint_cleared = hint_cleared.clone();
         move |e| {
             let text = e.text().to_string();
+
+            // If hint hasn't been cleared yet and text is the hint, skip
+            if !*hint_cleared.borrow() {
+                if text == "Type to search…" {
+                    return;
+                }
+                *hint_cleared.borrow_mut() = true;
+            }
+
             render_results(&text);
+        }
+    });
+
+    // Clear the hint text when user starts typing
+    entry.connect_key_press_event({
+        let hint_cleared = hint_cleared.clone();
+        move |e, ev| {
+            if !*hint_cleared.borrow() {
+                let keyval = ev.keyval();
+                // Only clear on printable characters, not navigation keys
+                if let Some(c) = keyval.to_unicode() && !c.is_control() {
+                        e.set_text("");
+                        *hint_cleared.borrow_mut() = true;
+                }
+            }
+            Propagation::Proceed
         }
     });
 
@@ -207,6 +236,8 @@ pub fn build_ui(app: &Application, cfg: Arc<Config>) -> Result<(), String> {
 
     window.show_all();
     entry.grab_focus();
+    // Deselect the hint text so it's visible but not selected
+    entry.select_region(0, 0);
     Ok(())
 }
 
