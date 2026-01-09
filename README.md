@@ -45,6 +45,9 @@ Clone the repository:
 cargo install --git https://github.com/daniel-curry/scout --locked
 ````
 
+*Note: `cargo install` installs binaries to ~/.cargo/bin by default.
+Make sure that this directory is on your `PATH` if scout isn't launching.*
+
 ## Usage
 
 ### Running Scout
