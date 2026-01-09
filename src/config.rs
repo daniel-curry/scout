@@ -37,11 +37,20 @@ pub struct Theme {
     #[serde(default = "default_bg_color")]
     pub bg_color: String,
     
-    #[serde(default = "default_text_color")]
-    pub text_color: String,
+    #[serde(default = "default_font_color")]
+    pub font_color: String,
     
     #[serde(default = "default_selection_color")]
     pub selection_color: String,
+    
+    #[serde(default = "default_entry_min_height")]
+    pub entry_min_height: u32,
+    
+    #[serde(default = "default_entry_border_color")]
+    pub entry_border_color: String,
+    
+    #[serde(default = "default_entry_border_radius")]
+    pub entry_border_radius: u32,
 }
 
 impl Default for Theme {
@@ -50,8 +59,11 @@ impl Default for Theme {
             font_size: default_font_size(),
             font_family: default_font_family(),
             bg_color: default_bg_color(),
-            text_color: default_text_color(),
+            font_color: default_font_color(),
             selection_color: default_selection_color(),
+            entry_min_height: default_entry_min_height(),
+            entry_border_color: default_entry_border_color(),
+            entry_border_radius: default_entry_border_radius(),
         }
     }
 }
@@ -64,9 +76,12 @@ fn default_window_width() -> i32 { 600 }
 fn default_window_height() -> i32 { 260 }
 fn default_icon_size() -> i32 { 32 }
 fn default_font_family() -> String { "Sans".to_string() }
-fn default_bg_color() -> String { "#FFFFFF".to_string() }
-fn default_text_color() -> String { "#000000".to_string() }
-fn default_selection_color() -> String { "#D3D3D3".to_string() }
+fn default_bg_color() -> String { "#171717".to_string() }
+fn default_font_color() -> String { "#f0f0f0".to_string() }
+fn default_selection_color() -> String { "#1e46c9".to_string() }
+fn default_entry_min_height() -> u32 { 32 }
+fn default_entry_border_color() -> String { "#3a3a3a".to_string() }
+fn default_entry_border_radius() -> u32 { 4 }
 
 impl Default for Config {
     fn default() -> Self {
