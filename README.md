@@ -77,15 +77,22 @@ Scout is fully configurable via a TOML configuration file. On first run, a defau
 
 ### Configuration Options
 
-| Option              | Type    | Default   | Description                                        |
-|---------------------|---------|-----------|----------------------------------------------------|
-| `show_icons`        | boolean | `true`    | Enable/disable application icons in search results |
-| `max_results`       | integer | `5`       | Maximum number of search results to display        |
-| `terminal_emulator` | string  | `"kitty"` | Terminal emulator to use for terminal applications |
-| `window_width`      | integer | `600`     | Width of the Scout window in pixels                |
-| `window_height`     | integer | `260`     | Height of the Scout window in pixels               |
-| `icon_size`         | integer | `32`      | Size of application icons in pixels                |
-| `theme.font_size`   | integer | `14`      | Font size for UI elements                          |
+| Option                       | Type    | Default       | Description                                        |
+|------------------------------|---------|---------------|----------------------------------------------------|
+| `show_icons`                 | boolean | `true`        | Enable/disable application icons in search results |
+| `max_results`                | integer | `5`           | Maximum number of search results to display        |
+| `terminal_emulator`          | string  | `"kitty"`     | Terminal emulator to use for terminal applications |
+| `window_width`               | integer | `600`         | Width of the Scout window in pixels                |
+| `window_height`              | integer | `260`         | Height of the Scout window in pixels               |
+| `icon_size`                  | integer | `32`          | Size of application icons in pixels                |
+| `theme.font_size`            | integer | `14`          | Font size for UI elements                          |
+| `theme.font_family`          | string  | `"Sans"`      | Font family for UI elements                        |
+| `theme.bg_color`             | string  | `"#171717"`   | Background color of the window                     |
+| `theme.font_color`           | string  | `"#f0f0f0"`   | Color of text elements                             |
+| `theme.selection_color`      | string  | `"#1e46c9"`   | Background color for selected items                |
+| `theme.entry_min_height`     | integer | `32`          | Minimum height of the search entry box in pixels   |
+| `theme.entry_border_color`   | string  | `"#3a3a3a"`   | Border color of the search entry box               |
+| `theme.entry_border_radius`  | integer | `4`           | Border radius of the search entry box in pixels    |
 
 ### Example Configuration
 
@@ -99,6 +106,13 @@ icon_size = 32
 
 [theme]
 font_size = 14
+font_family = "Sans"
+bg_color = "#171717"
+font_color = "#f0f0f0"
+selection_color = "#1e46c9"
+entry_min_height = 32
+entry_border_color = "#3a3a3a"
+entry_border_radius = 4
 ```
 
 ## How It Works
