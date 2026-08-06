@@ -30,32 +30,32 @@ pub struct Config {
 pub struct Theme {
     #[serde(default = "default_font_size")]
     pub font_size: u32,
-    
+
     #[serde(default = "default_font_family")]
     pub font_family: String,
-    
+
     #[serde(default = "default_bg_color")]
     pub bg_color: String,
-    
+
     #[serde(default = "default_font_color")]
     pub font_color: String,
-    
+
     #[serde(default = "default_selection_color")]
     pub selection_color: String,
-    
+
     #[serde(default = "default_entry_min_height")]
     pub entry_min_height: u32,
-    
+
     #[serde(default = "default_entry_border_color")]
     pub entry_border_color: String,
-    
+
     #[serde(default = "default_entry_border_radius")]
     pub entry_border_radius: u32,
 }
 
 impl Default for Theme {
     fn default() -> Self {
-        Self { 
+        Self {
             font_size: default_font_size(),
             font_family: default_font_family(),
             bg_color: default_bg_color(),
@@ -68,20 +68,48 @@ impl Default for Theme {
     }
 }
 
-fn default_show_icons() -> bool { true }
-fn default_max_results() -> usize { 5 }
-fn default_font_size() -> u32 { 14 }
-fn default_terminal_emulator() -> String { "kitty".to_string() }
-fn default_window_width() -> i32 { 600 }
-fn default_window_height() -> i32 { 260 }
-fn default_icon_size() -> i32 { 32 }
-fn default_font_family() -> String { "Sans".to_string() }
-fn default_bg_color() -> String { "#171717".to_string() }
-fn default_font_color() -> String { "#f0f0f0".to_string() }
-fn default_selection_color() -> String { "#1e46c9".to_string() }
-fn default_entry_min_height() -> u32 { 32 }
-fn default_entry_border_color() -> String { "#3a3a3a".to_string() }
-fn default_entry_border_radius() -> u32 { 4 }
+fn default_show_icons() -> bool {
+    true
+}
+fn default_max_results() -> usize {
+    5
+}
+fn default_font_size() -> u32 {
+    14
+}
+fn default_terminal_emulator() -> String {
+    "kitty".to_string()
+}
+fn default_window_width() -> i32 {
+    600
+}
+fn default_window_height() -> i32 {
+    260
+}
+fn default_icon_size() -> i32 {
+    32
+}
+fn default_font_family() -> String {
+    "Sans".to_string()
+}
+fn default_bg_color() -> String {
+    "#171717".to_string()
+}
+fn default_font_color() -> String {
+    "#f0f0f0".to_string()
+}
+fn default_selection_color() -> String {
+    "#1e46c9".to_string()
+}
+fn default_entry_min_height() -> u32 {
+    32
+}
+fn default_entry_border_color() -> String {
+    "#3a3a3a".to_string()
+}
+fn default_entry_border_radius() -> u32 {
+    4
+}
 
 impl Default for Config {
     fn default() -> Self {
@@ -100,7 +128,7 @@ impl Default for Config {
 fn config_path() -> io::Result<PathBuf> {
     // (qualifier, organization, application)
     let proj = ProjectDirs::from("io", "daniel-curry", "scout")
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "cannot determine config dir"))?;
+        .ok_or_else(|| io::Error::other("cannot determine config dir"))?;
 
     Ok(proj.config_dir().join("config.toml"))
 }
@@ -122,8 +150,8 @@ pub fn load_or_create() -> io::Result<Config> {
     }
 
     let raw = fs::read_to_string(&path)?;
-    let cfg: Config = toml::from_str(&raw)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let cfg: Config =
+        toml::from_str(&raw).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     Ok(cfg)
 }
 
@@ -226,19 +254,20 @@ mod tests {
         let config = Config {
             show_icons: false,
             max_results: 8,
-            theme: Theme { font_size: 18, ..Theme::default() },
+            theme: Theme {
+                font_size: 18,
+                ..Theme::default()
+            },
             terminal_emulator: "gnome-terminal".to_string(),
             window_width: 700,
             window_height: 350,
             icon_size: 40,
         };
 
-        let toml_str = toml::to_string_pretty(&config)
-            .expect("Failed to serialize config to TOML");
+        let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize config to TOML");
 
         // Parse it back
-        let parsed: Config = toml::from_str(&toml_str)
-            .expect("Failed to parse serialized TOML");
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to parse serialized TOML");
 
         assert_eq!(config.show_icons, parsed.show_icons);
         assert_eq!(config.max_results, parsed.max_results);
@@ -253,10 +282,8 @@ mod tests {
     fn test_roundtrip_serialization() {
         let original = Config::default();
 
-        let serialized = toml::to_string_pretty(&original)
-            .expect("Failed to serialize");
-        let deserialized: Config = toml::from_str(&serialized)
-            .expect("Failed to deserialize");
+        let serialized = toml::to_string_pretty(&original).expect("Failed to serialize");
+        let deserialized: Config = toml::from_str(&serialized).expect("Failed to deserialize");
 
         assert_eq!(original.show_icons, deserialized.show_icons);
         assert_eq!(original.max_results, deserialized.max_results);
@@ -286,7 +313,10 @@ mod tests {
         "#;
 
         let result: Result<Config, _> = toml::from_str(invalid_toml);
-        assert!(result.is_err(), "Should fail when boolean field has string value");
+        assert!(
+            result.is_err(),
+            "Should fail when boolean field has string value"
+        );
     }
 
     #[test]
@@ -333,7 +363,10 @@ mod tests {
 
     #[test]
     fn test_theme_clone() {
-        let theme = Theme { font_size: 18, ..Theme::default() };
+        let theme = Theme {
+            font_size: 18,
+            ..Theme::default()
+        };
         let cloned = theme.clone();
 
         assert_eq!(theme.font_size, cloned.font_size);

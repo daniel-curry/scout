@@ -1,7 +1,12 @@
-use crate::entry::{SystemAction};
-use gio::prelude::AppInfoExt;
+use crate::entry::SystemAction;
 use gio::AppInfo;
+use gio::prelude::AppInfoExt;
 use glib::{Cast, SpawnFlags};
+
+// TODO(entry-refactor): the functions in this file move into the relevant
+// Launchable::activate() impls (AppEntry, SystemActionEntry). What should
+// remain here are the shared low-level helpers (subprocess spawning, setsid)
+// that those impls call into — see todo.md "Entry refactor" section.
 
 pub fn needs_terminal(app: &AppInfo) -> bool {
     if let Some(dai) = app.downcast_ref::<gio::DesktopAppInfo>() {
@@ -15,8 +20,9 @@ pub fn launch_gui_app(app: &AppInfo) -> Result<(), String> {
 
     // Prefer DesktopAppInfo so we can inject a child-setup hook (setsid).
     if let Some(dai) = app.dynamic_cast_ref::<gio::DesktopAppInfo>() {
-        let spawn_flags =
-            SpawnFlags::SEARCH_PATH | SpawnFlags::STDOUT_TO_DEV_NULL | SpawnFlags::STDERR_TO_DEV_NULL;
+        let spawn_flags = SpawnFlags::SEARCH_PATH
+            | SpawnFlags::STDOUT_TO_DEV_NULL
+            | SpawnFlags::STDERR_TO_DEV_NULL;
 
         // Called after fork() but before exec() in the child.
         let user_setup: Option<Box<dyn FnOnce()>> = Some(Box::new(|| {
@@ -34,8 +40,10 @@ pub fn launch_gui_app(app: &AppInfo) -> Result<(), String> {
     Ok(())
 }
 
-pub fn launch_terminal_application(app_argv: &[String], terminal_argv_prefix: &[String]) -> Result<(), glib::Error> {
-
+pub fn launch_terminal_application(
+    app_argv: &[String],
+    terminal_argv_prefix: &[String],
+) -> Result<(), glib::Error> {
     // Build argv = terminal + exec-flag/args + app argv
     let mut argv: Vec<String> = Vec::new();
     argv.extend_from_slice(terminal_argv_prefix);
@@ -51,13 +59,13 @@ pub fn launch_terminal_application(app_argv: &[String], terminal_argv_prefix: &[
     launcher.set_child_setup(|| {
         #[cfg(unix)]
         unsafe {
-            let _ = libc::setsid();
+            libc::setsid();
         }
     });
 
     // Spawn and immediately drop handle.
     // GSubprocess reaps children quickly to avoid zombies.
-    let _child = launcher.spawn(&argv_refs)?;
+    launcher.spawn(&argv_refs)?;
     Ok(())
 }
 
@@ -67,7 +75,8 @@ pub fn launch_system_action(action: &SystemAction) -> Result<(), String> {
         SystemAction::Restart => system_shutdown::reboot(),
         SystemAction::Hibernate => system_shutdown::hibernate(),
         SystemAction::Sleep => system_shutdown::sleep(),
-    }.expect("System action failed");
-    
+    }
+    .expect("System action failed");
+
     Ok(())
 }
